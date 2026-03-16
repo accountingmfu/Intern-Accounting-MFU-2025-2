@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MFU Internship Dashboard — AY 2025/2</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --navy:   #fdf8ee;
+    --navy2:  #f5edd8;
+    --gold:   #8a6a1a;
+    --gold2:  #6b4f10;
+    --teal:   #1a7a6e;
+    --coral:  #c0440a;
+    --lavender:#5a3fbf;
+    --slate:  #6b5e3e;
+    --white:  #2d2010;
+    --card:   #fffcf3;
+    --border: rgba(138,106,26,0.18);
+
+    /* Category colours */
+    --c1: #b8860b;
+    --c2: #1a7a6e;
+    --c3: #c0440a;
+    --c4: #5a3fbf;
+    --c5: #7a6840;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--navy);
+    color: var(--white);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ─── HEADER ─── */
+  header {
+    padding: 3rem 3rem 2rem;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute; top:-60px; right:-60px;
+    width:320px; height:320px;
+    background: radial-gradient(circle, rgba(138,106,26,.10) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .header-label {
+    font-size: .72rem;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: .5rem;
+  }
+  h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    line-height: 1.1;
+    color: var(--white);
+    max-width: 600px;
+  }
+  h1 em {
+    font-style: italic;
+    color: var(--gold2);
+  }
+  .header-meta {
+    margin-top: 1rem;
+    display: flex; gap: 2rem; flex-wrap: wrap;
+    font-size: .82rem; color: var(--slate);
+  }
+  .header-meta span strong { color: var(--white); font-weight: 500; }
+
+  /* ─── KPI STRIP ─── */
+  .kpi-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px,1fr));
+    gap: 1px;
+    background: var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .kpi {
+    background: var(--navy);
+    padding: 1.4rem 1.6rem;
+    position: relative;
+    transition: background .2s;
+  }
+  .kpi:hover { background: var(--navy2); }
+  .kpi-value {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2rem;
+    color: var(--gold2);
+    line-height: 1;
+  }
+  .kpi-label {
+    font-size: .75rem;
+    color: var(--slate);
+    margin-top: .3rem;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+  }
+  .kpi-accent {
+    position: absolute; bottom:0; left:0;
+    height: 2px; width: 0;
+    background: var(--gold);
+    transition: width .4s;
+  }
+  .kpi:hover .kpi-accent { width: 100%; }
+
+  /* ─── MAIN GRID ─── */
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    padding: 2rem 3rem;
+  }
+  @media (max-width: 800px) {
+    .grid { grid-template-columns: 1fr; padding: 1rem 1.2rem; }
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1.6rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::after {
+    content:'';
+    position: absolute; top:0; left:0; right:0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    opacity: .5;
+  }
+  .card-full { grid-column: 1 / -1; }
+
+  .card-title {
+    font-size: .7rem;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: .3rem;
+  }
+  .card-subtitle {
+    font-size: 1.05rem;
+    font-weight: 500;
+    color: var(--white);
+    margin-bottom: 1.4rem;
+  }
+
+  /* chart containers */
+  .chart-wrap {
+    position: relative;
+    max-width: 340px;
+    margin: 0 auto;
+  }
+  .chart-center {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    text-align: center;
+    pointer-events: none;
+  }
+  .chart-center-value {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.9rem;
+    color: #2d2010;
+    line-height: 1;
+  }
+  .chart-center-label {
+    font-size: .68rem;
+    color: var(--slate);
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    margin-top: .15rem;
+  }
+
+  /* Legend */
+  .legend {
+    margin-top: 1.4rem;
+    display: flex; flex-direction: column; gap: .6rem;
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: .7rem;
+    font-size: .82rem;
+  }
+  .legend-dot {
+    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+  }
+  .legend-name { flex: 1; color: var(--white); }
+  .legend-val { font-weight: 500; color: var(--gold2); min-width: 28px; text-align: right; }
+  .legend-pct { color: var(--slate); font-size: .75rem; min-width: 38px; text-align: right; }
+  .legend-bar-wrap { flex: 1.4; background: rgba(0,0,0,.08); border-radius: 2px; height: 4px; }
+  .legend-bar { height: 4px; border-radius: 2px; }
+
+  /* MNC big display */
+  .mnc-split {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem;
+    margin-top: .5rem;
+  }
+  .mnc-block {
+    background: rgba(0,0,0,.03);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1.2rem;
+    text-align: center;
+  }
+  .mnc-pct {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2.8rem;
+    line-height: 1;
+  }
+  .mnc-pct.yes { color: #1a7a6e; }
+  .mnc-pct.no  { color: #7a6840; }
+  .mnc-desc {
+    font-size: .78rem;
+    color: var(--slate);
+    margin-top: .4rem;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+  }
+  .mnc-count { font-size: .9rem; color: var(--white); margin-top: .2rem; }
+
+  /* insight callouts */
+  .insights {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr));
+    gap: .8rem; margin-top: 1.2rem;
+  }
+  .insight {
+    background: rgba(138,106,26,.07);
+    border-left: 2px solid var(--gold);
+    border-radius: 0 4px 4px 0;
+    padding: .8rem 1rem;
+    font-size: .8rem;
+    line-height: 1.5;
+    color: var(--white);
+  }
+  .insight strong { color: var(--gold2); }
+
+  footer {
+    text-align: center;
+    padding: 1.4rem;
+    font-size: .72rem;
+    color: var(--slate);
+    border-top: 1px solid var(--border);
+    margin-top: 1rem;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-label">Mae Fah Luang University · School of Management</div>
+  <h1>Student Internship<br><em>Placement Report</em></h1>
+  <div class="header-meta">
+    <span><strong>Academic Year</strong> 2025 / Semester 2</span>
+    <span><strong>Programme</strong> Accounting — Co-operative Education</span>
+    <span><strong>Total Students</strong> 86</span>
+    <span><strong>Generated</strong> 8 March 2026</span>
+  </div>
+</header>
+
+<!-- KPI STRIP -->
+<div class="kpi-strip">
+  <div class="kpi">
+    <div class="kpi-value">86</div>
+    <div class="kpi-label">Total Students</div>
+    <div class="kpi-accent"></div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-value">48.8%</div>
+    <div class="kpi-label">Big4 / Intl. Firms</div>
+    <div class="kpi-accent"></div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-value">32.6%</div>
+    <div class="kpi-label">Multinational Corps</div>
+    <div class="kpi-accent"></div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-value">51</div>
+    <div class="kpi-label">Unique Companies</div>
+    <div class="kpi-accent"></div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-value">3.5%</div>
+    <div class="kpi-label">Listed Companies (PCL)</div>
+    <div class="kpi-accent"></div>
+  </div>
+</div>
+
+<!-- MAIN GRID -->
+<div class="grid">
+
+  <!-- PIE 1: Company Type -->
+  <div class="card">
+    <div class="card-title">Chart 01</div>
+    <div class="card-subtitle">Placement by Company Type</div>
+    <div class="chart-wrap">
+      <canvas id="pie1" width="340" height="340"></canvas>
+      <div class="chart-center">
+        <div class="chart-center-value">86</div>
+        <div class="chart-center-label">Students</div>
+      </div>
+    </div>
+    <div class="legend" id="legend1"></div>
+  </div>
+
+  <!-- PIE 2: MNC -->
+  <div class="card">
+    <div class="card-title">Chart 02</div>
+    <div class="card-subtitle">Multinational Corporation Placement</div>
+    <div class="chart-wrap" style="max-width:280px">
+      <canvas id="pie2" width="280" height="280"></canvas>
+      <div class="chart-center">
+        <div class="chart-center-value">28</div>
+        <div class="chart-center-label">MNC</div>
+      </div>
+    </div>
+    <div class="mnc-split" style="margin-top:1.4rem">
+      <div class="mnc-block">
+        <div class="mnc-pct yes">32.6%</div>
+        <div class="mnc-count">28 students</div>
+        <div class="mnc-desc">Multinational</div>
+      </div>
+      <div class="mnc-block">
+        <div class="mnc-pct no">67.4%</div>
+        <div class="mnc-count">58 students</div>
+        <div class="mnc-desc">Domestic</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Insights -->
+  <div class="card card-full">
+    <div class="card-title">Key Observations</div>
+    <div class="card-subtitle" style="margin-bottom:.8rem">Data Highlights — AY 2025/2</div>
+    <div class="insights">
+      <div class="insight"><strong>Nearly half</strong> of all students (48.8%) secured placements at Big4 or mid-tier international accounting firms, led by Forvis Mazars, PwC, and Grant Thornton.</div>
+      <div class="insight"><strong>26.7% are at Thai private accounting companies</strong> — smaller domestic audit and accounting firms outside international networks, reflecting strong local industry absorption.</div>
+      <div class="insight"><strong>One in three</strong> students (32.6%) is placed at a multinational corporation, signalling solid international exposure for the accounting programme.</div>
+      <div class="insight"><strong>15.1% are in corporate companies</strong> (non-accounting firms: IT, hospitality, energy, logistics), indicating growing diversity beyond traditional accounting firm placements.</div>
+      <div class="insight"><strong>Listed company placements remain low</strong> at 3.5% (3 students at Thai Public Companies, non-accounting sector) — a potential area to expand industry partnership outreach.</div>
+      <div class="insight"><strong>Government &amp; SOE placements</strong> account for 5.8% (5 students), including the Revenue Department and MFU's own CWIE unit.</div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  MFU School of Management · Accounting Programme · Co-operative Education AY 2025/2 · Data as of 8 March 2026
+</footer>
+
+<script>
+// ─── DATA ─────────────────────────────────────────────
+const typeData = {
+  labels: [
+    'Big4 / Mid-tier International Firm',
+    'Thai Private Accounting Company',
+    'Corporate Company (Non-Accounting Firm)',
+    'Government / SOE',
+    'Thai Public Company (PCL, Non-Accounting Firm)'
+  ],
+  values: [42, 23, 13, 5, 3],
+  colors: ['#b8860b','#1a7a6e','#c0440a','#5a3fbf','#7a6840']
+};
+
+const mncData = {
+  labels: ['Multinational Corporation','Domestic Company'],
+  values: [28, 58],
+  colors: ['#1a7a6e','#d4c9a8']
+};
+
+// ─── PIE 1: Company Type ───────────────────────────────
+const total = typeData.values.reduce((a,b)=>a+b,0);
+const ctx1 = document.getElementById('pie1').getContext('2d');
+new Chart(ctx1, {
+  type: 'doughnut',
+  data: {
+    labels: typeData.labels,
+    datasets: [{
+      data: typeData.values,
+      backgroundColor: typeData.colors,
+      borderColor: '#fffcf3',
+      borderWidth: 3,
+      hoverOffset: 6
+    }]
+  },
+  options: {
+    cutout: '68%',
+    plugins: { legend: { display: false }, tooltip: {
+      callbacks: {
+        label: ctx => ` ${ctx.label}: ${ctx.raw} students (${(ctx.raw/total*100).toFixed(1)}%)`
+      }
+    }},
+    animation: { animateRotate: true, duration: 900 }
+  }
+});
+
+// Build legend 1
+const leg1 = document.getElementById('legend1');
+typeData.labels.forEach((label, i) => {
+  const pct = (typeData.values[i]/total*100).toFixed(1);
+  const item = document.createElement('div');
+  item.className = 'legend-item';
+  item.innerHTML = `
+    <div class="legend-dot" style="background:${typeData.colors[i]}"></div>
+    <div class="legend-name">${label}</div>
+    <div class="legend-bar-wrap">
+      <div class="legend-bar" style="width:${pct}%;background:${typeData.colors[i]}\"></div>
+    </div>
+    <div class="legend-val">${typeData.values[i]}</div>
+    <div class="legend-pct">${pct}%</div>
+  `;
+  leg1.appendChild(item);
+});
+
+// ─── PIE 2: MNC ──────────────────────────────────────
+const ctx2 = document.getElementById('pie2').getContext('2d');
+new Chart(ctx2, {
+  type: 'doughnut',
+  data: {
+    labels: mncData.labels,
+    datasets: [{
+      data: mncData.values,
+      backgroundColor: mncData.colors,
+      borderColor: '#fffcf3',
+      borderWidth: 3,
+      hoverOffset: 6
+    }]
+  },
+  options: {
+    cutout: '68%',
+    plugins: { legend: { display: false }, tooltip: {
+      callbacks: {
+        label: ctx => ` ${ctx.label}: ${ctx.raw} students (${(ctx.raw/86*100).toFixed(1)}%)`
+      }
+    }},
+    animation: { animateRotate: true, duration: 900 }
+  }
+});
+
+
+</script>
+</body>
+</html>
